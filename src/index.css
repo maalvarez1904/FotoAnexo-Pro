@@ -1,0 +1,260 @@
+@import "./fonts.css";
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --ui-bg-light: #E9E3E6;
+    --ui-bg-muted: #C3BABA;
+    --ui-bg-canvas: #B2B2B2;
+    --ui-accent: #9A8F97;
+    --ui-accent-strong: #736F72;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #000000;
+    background-color: #E9E3E6;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ==========================================================================
+   GEOMETRÍA MILIMÉTRICA EXACTA DE LA HOJA A4 (210mm x 297mm)
+   ========================================================================== */
+
+.a4-sheet {
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  padding-top: 15mm;
+  padding-bottom: 15mm;
+  padding-left: 20mm;  /* Margen técnico de encarpetado/foliatura */
+  padding-right: 15mm;
+  overflow: hidden;
+  background-color: #ffffff;
+  color: #111827;
+  position: relative;
+  flex-shrink: 0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Área útil imprimible resultante: 175mm de ancho x 267mm de alto */
+.a4-printable-area {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 267mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 1. Encabezado (Header): height: 10mm; margin-bottom: 4mm; (Total: 14mm) */
+.a4-header {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 10mm;
+  margin-bottom: 4mm;
+  border-bottom: 0.5pt solid #333333;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 1.5mm;
+  font-family: var(--font-sans);
+  font-size: 8.5pt;
+  line-height: 1.15;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+/* 2. Título de la página: height: 10mm; margin-bottom: 4mm; (Total: 14mm) */
+.a4-page-title-bar {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 10mm;
+  margin-bottom: 4mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 11pt;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #111827;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 3. Contenedor fijo de la fotografía: width: 175mm; height: 145mm; margin-bottom: 4mm; (Total: 149mm) */
+.a4-photo-frame {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 145mm;
+  margin-bottom: 4mm;
+  border: 0.5pt solid #333333;
+  background-color: #F8F9FA;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* 4. Bloque de Epígrafe y Datos EXIF: height: 74mm; (Total: 74mm) */
+.a4-caption-exif-block {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 74mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Caja de Epígrafe cuando EXIF está activo: height: 54mm; margin-bottom: 2mm; */
+.a4-caption-box-with-exif {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 54mm;
+  margin-bottom: 2mm;
+  border: 0.5pt solid #CCCCCC;
+  padding: 3mm;
+  background-color: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Caja de Epígrafe cuando EXIF está desactivado: height: 74mm; */
+.a4-caption-box-full {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 74mm;
+  border: 0.5pt solid #CCCCCC;
+  padding: 3mm;
+  background-color: #ffffff;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Cuadro EXIF: height: 18mm; border: 0.5pt solid #CCCCCC; background: #F8F9FA; padding: 2mm 3mm; */
+.a4-exif-box {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 18mm;
+  border: 0.5pt solid #CCCCCC;
+  background-color: #F8F9FA;
+  padding: 2mm 3mm;
+  overflow: hidden;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 7.5pt;
+  line-height: 1.35;
+  color: #1f2937;
+}
+
+/* 5. Pie de página (Footer): margin-top: 4mm; height: 12mm; (Total: 16mm) */
+.a4-footer {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 12mm;
+  margin-top: 4mm;
+  border-top: 0.5pt solid #333333;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-top: 2mm;
+  font-family: var(--font-sans);
+  font-size: 8.5pt;
+  line-height: 1.15;
+  color: #1f2937;
+  flex-shrink: 0;
+}
+
+/* Cuerpo central para hojas de Índice (267mm - 14mm header - 16mm footer = 237mm) */
+.a4-index-body {
+  box-sizing: border-box;
+  width: 175mm;
+  height: 237mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Leader dots en tabla de índice */
+.index-leader-dots {
+  flex: 1;
+  border-bottom: 1px dotted #6b7280;
+  margin: 0 3mm;
+  height: 0.75em;
+}
+
+/* Sincronización de texto vectorial para impresión y previsualización */
+.vector-text-block {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ==========================================================================
+   MOTOR DE EXPORTACIÓN A PDF (@MEDIA PRINT SIN ERRORES)
+   ========================================================================== */
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body,
+  #root,
+  .app-shell,
+  .print-area,
+  .print-canvas-wrapper,
+  .print-zoom-container {
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    background: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .a4-sheet {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .a4-sheet:last-of-type {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+}

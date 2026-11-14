@@ -1,0 +1,6 @@
+{
+  "name": "FotoAnexo Pro — Informes Periciales y Documentación Técnica",
+  "description": "Sistema editorial de precisión milimétrica para la composición y exportación a PDF A4 de anexos fotográficos periciales, informes técnicos de arquitectura e ingeniería.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
