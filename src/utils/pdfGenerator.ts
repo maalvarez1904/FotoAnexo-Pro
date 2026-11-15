@@ -147,25 +147,30 @@ function drawCoverSheet(doc: jsPDF, coverConfig: CoverConfig) {
   doc.setLineWidth(0.5 * PT_TO_MM);
   doc.line(innerX, cursorY, innerRightX, cursorY);
 
-  // Bloque central: 3 tarjetas técnicas (gap 5mm) centradas verticalmente entre título y pie
+  // Bloque central: 3 tarjetas técnicas (gap 5mm) con guarda de alto para no solapar el pie
   const footerStartY = MARGIN_TOP + 267 - 12 - 14; // ~256mm
-  const cardsBlockStartY = Math.max(cursorY + 12, 134);
+  const cardsBlockStartY = Math.min(Math.max(cursorY + 10, 134), footerStartY - 82);
 
   const drawCard = (
     y: number,
     minHeight: number,
+    maxBottomY: number,
     fillRgb: [number, number, number],
     label: string,
     value: string,
     fallback: string,
     fontSize: number
   ): number => {
-    const textLines = doc.splitTextToSize(
+    const lineHeightMm = fontSize * 0.46;
+    const rawLines = doc.splitTextToSize(
       value.trim() || fallback,
       innerW - 10
     );
-    const contentH = 4 + 3.5 + textLines.length * (fontSize * 0.46) + 4;
-    const cardH = Math.max(minHeight, contentH);
+    const maxAllowedHeight = Math.max(minHeight, maxBottomY - y);
+    const maxLines = Math.max(1, Math.floor((maxAllowedHeight - 13) / lineHeightMm));
+    const textLines = rawLines.slice(0, maxLines);
+    const contentH = 4 + 3.5 + textLines.length * lineHeightMm + 4;
+    const cardH = Math.min(maxAllowedHeight, Math.max(minHeight, contentH));
 
     doc.setFillColor(fillRgb[0], fillRgb[1], fillRgb[2]);
     doc.setDrawColor(203, 213, 225); // #cbd5e1
@@ -193,6 +198,7 @@ function drawCoverSheet(doc: jsPDF, coverConfig: CoverConfig) {
   cardY = drawCard(
     cardY,
     18,
+    footerStartY - 62,
     [248, 250, 252], // #f8fafc
     'COMITENTE / JUZGADO / DESTINATARIO',
     coverConfig.clientOrCourt,
@@ -202,6 +208,7 @@ function drawCoverSheet(doc: jsPDF, coverConfig: CoverConfig) {
   cardY = drawCard(
     cardY,
     18,
+    footerStartY - 39,
     [248, 250, 252], // #f8fafc
     'PROFESIONAL INTERVINIENTE / MATRÍCULA',
     coverConfig.professionalInfo,
@@ -210,7 +217,8 @@ function drawCoverSheet(doc: jsPDF, coverConfig: CoverConfig) {
   );
   drawCard(
     cardY,
-    34,
+    24,
+    footerStartY - 5,
     [255, 255, 255], // #ffffff
     'OBSERVACIONES Y ALCANCE TÉCNICO',
     coverConfig.notes,
@@ -303,7 +311,7 @@ function drawIndexSheet(
     doc.setTextColor(17, 24, 39);
     doc.text(entry.formattedLabel, MARGIN_LEFT, rowY);
 
-    const folioText = `${headerFooterConfig.pageNumberPrefix} ${entry.folioNumber}`;
+    const folioText = `${headerFooterConfig.pageNumberPrefix} ${String(entry.folioNumber).padStart(2, '0')}`;
     doc.text(folioText, RIGHT_X, rowY, { align: 'right' });
 
     const leftW = doc.getTextWidth(entry.formattedLabel);

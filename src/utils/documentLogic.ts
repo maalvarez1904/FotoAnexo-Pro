@@ -204,7 +204,7 @@ export function formatFolioLabel(
   folioNumber: number,
   totalFolios: number
 ): string {
-  const pad = totalFolios >= 10 ? 2 : 2;
+  const pad = 2;
   const fStr = String(folioNumber).padStart(pad, '0');
   const tStr = String(Math.max(folioNumber, totalFolios)).padStart(pad, '0');
   return `${prefix} ${fStr} de ${tStr}`;

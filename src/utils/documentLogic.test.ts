@@ -123,6 +123,7 @@ test('buildFormattedExifText formats date, camera, optics and GPS or falls back 
 
 import {
   buildProjectPayload,
+  importProjectFromJsonFile,
   parseAndValidateProjectJson,
 } from './projectStorage';
 
@@ -212,5 +213,84 @@ test('parseAndValidateProjectJson sanitizes non-finite or non-positive photo dim
   const parsed = parseAndValidateProjectJson(malformedPayload);
   assert.equal(parsed.photos[0].naturalWidth, 1600);
   assert.equal(parsed.photos[0].naturalHeight, 1200);
+});
+
+test('importProjectFromJsonFile revokes created ObjectURLs if a later photo fails validation', async () => {
+  const createdUrls: string[] = [];
+  const revokedUrls: string[] = [];
+  const originalCreate = URL.createObjectURL;
+  const originalRevoke = URL.revokeObjectURL;
+
+  URL.createObjectURL = () => {
+    const url = `blob:mock-${createdUrls.length + 1}`;
+    createdUrls.push(url);
+    return url;
+  };
+  URL.revokeObjectURL = (url: string) => {
+    revokedUrls.push(url);
+  };
+
+  try {
+    const payload = buildProjectPayload(
+      createInitialCoverConfig(),
+      createInitialHeaderFooterConfig(),
+      [
+        {
+          id: 'ok-1',
+          fileName: 'ok.png',
+          fileType: 'image/png',
+          lastModified: 1700000000000,
+          dataUrl:
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          naturalWidth: 100,
+          naturalHeight: 100,
+          pageTitle: '',
+          caption: '',
+          exifText: NO_EXIF_DEFAULT_MESSAGE,
+          hasExifData: false,
+          showExifOverride: null,
+          transform: {
+            rotation: 0,
+            scale: 1,
+            fitMode: 'contain',
+            offsetX: 0,
+            offsetY: 0,
+          },
+        },
+        {
+          id: 'bad-2',
+          fileName: 'bad.svg',
+          fileType: 'image/svg+xml',
+          lastModified: 1700000000000,
+          dataUrl: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+          naturalWidth: 100,
+          naturalHeight: 100,
+          pageTitle: '',
+          caption: '',
+          exifText: NO_EXIF_DEFAULT_MESSAGE,
+          hasExifData: false,
+          showExifOverride: null,
+          transform: {
+            rotation: 0,
+            scale: 1,
+            fitMode: 'contain',
+            offsetX: 0,
+            offsetY: 0,
+          },
+        },
+      ]
+    );
+
+    const file = new File([JSON.stringify(payload)], 'broken.json', {
+      type: 'application/json',
+    });
+
+    await assert.rejects(() => importProjectFromJsonFile(file));
+    assert.deepEqual(createdUrls, ['blob:mock-1']);
+    assert.deepEqual(revokedUrls, ['blob:mock-1']);
+  } finally {
+    URL.createObjectURL = originalCreate;
+    URL.revokeObjectURL = originalRevoke;
+  }
 });
 

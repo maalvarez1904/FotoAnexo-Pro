@@ -317,26 +317,33 @@ export async function importProjectFromJsonFile(file: File): Promise<{
   const text = await file.text();
   const validated = parseAndValidateProjectJson(text);
 
-  const restoredPhotos: PhotoPageItem[] = validated.photos.map((sp) => {
-    const restoredFile = sp.dataUrl
-      ? dataUrlToFile(sp.dataUrl, sp.fileName, sp.fileType, sp.lastModified)
-      : new File([], sp.fileName, { type: sp.fileType });
-    const objectUrl = URL.createObjectURL(restoredFile);
+  const restoredPhotos: PhotoPageItem[] = [];
+  try {
+    for (const sp of validated.photos) {
+      const restoredFile = sp.dataUrl
+        ? dataUrlToFile(sp.dataUrl, sp.fileName, sp.fileType, sp.lastModified)
+        : new File([], sp.fileName, { type: sp.fileType });
+      const objectUrl = URL.createObjectURL(restoredFile);
 
-    return {
-      id: sp.id,
-      file: restoredFile,
-      objectUrl,
-      naturalWidth: sp.naturalWidth,
-      naturalHeight: sp.naturalHeight,
-      pageTitle: sp.pageTitle,
-      caption: sp.caption,
-      exifText: sp.exifText,
-      hasExifData: sp.hasExifData,
-      showExifOverride: sp.showExifOverride,
-      transform: { ...sp.transform },
-    };
-  });
+      restoredPhotos.push({
+        id: sp.id,
+        file: restoredFile,
+        objectUrl,
+        naturalWidth: sp.naturalWidth,
+        naturalHeight: sp.naturalHeight,
+        pageTitle: sp.pageTitle,
+        caption: sp.caption,
+        exifText: sp.exifText,
+        hasExifData: sp.hasExifData,
+        showExifOverride: sp.showExifOverride,
+        transform: { ...sp.transform },
+      });
+    }
+  } catch (err) {
+    // FIX: Revocar ObjectURLs ya creados si falla una foto posterior durante la importación
+    restoredPhotos.forEach((p) => URL.revokeObjectURL(p.objectUrl));
+    throw err;
+  }
 
   return {
     coverConfig: validated.coverConfig,

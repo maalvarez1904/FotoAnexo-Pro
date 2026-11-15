@@ -32,6 +32,7 @@ import {
   createInitialCoverConfig,
   createInitialHeaderFooterConfig,
   MM_TO_PX_96DPI,
+  NO_EXIF_DEFAULT_MESSAGE,
   stripGpsFromExifText,
 } from './utils/documentLogic';
 import {
@@ -102,9 +103,22 @@ export default function App() {
     Record<string, { url: string; size: number }>
   >(compressedPhotoMap);
   compressedPhotoMapRef.current = compressedPhotoMap;
-  // FIX: Contador de generación de sesión para descartar cargas asíncronas obsoletas
+  // FIX: Contador de generación de sesión y cargas activas para evitar carreras de estado
   const sessionGenerationRef = useRef<number>(0);
+  const pendingLoadsRef = useRef<number>(0);
   const statusTimerRef = useRef<number | null>(null);
+
+  const beginLoad = () => {
+    pendingLoadsRef.current += 1;
+    setIsUploading(true);
+  };
+
+  const endLoad = () => {
+    pendingLoadsRef.current = Math.max(0, pendingLoadsRef.current - 1);
+    if (pendingLoadsRef.current === 0) {
+      setIsUploading(false);
+    }
+  };
 
   const showStatusMessage = (msg: string | null, durationMs = 3500) => {
     if (statusTimerRef.current !== null) {
@@ -142,9 +156,24 @@ export default function App() {
     };
   }, []);
 
+  // FIX: Clave estable para no re-comprimir imágenes al editar textos, rotar o arrastrar (pan)
+  const compressionInputsKey = useMemo(
+    () =>
+      photos
+        .map(
+          (p) =>
+            `${p.id}:${p.objectUrl}:${p.naturalWidth}x${p.naturalHeight}:${Math.max(
+              1,
+              Math.min(3, p.transform.scale || 1)
+            )}`
+        )
+        .join('|'),
+    [photos]
+  );
+
   // Calcular versiones comprimidas JPEG en segundo plano cuando está activa la compresión
   useEffect(() => {
-    if (!compressionConfig.enabled || photos.length === 0) {
+    if (!compressionConfig.enabled || photosRef.current.length === 0) {
       setIsCalculatingCompression(false);
       setCompressedPhotoMap((prev) => {
         Object.values(prev).forEach((entry) => URL.revokeObjectURL(entry.url));
@@ -155,11 +184,12 @@ export default function App() {
 
     let cancelled = false;
     setIsCalculatingCompression(true);
+    const snapshotPhotos = photosRef.current;
 
     const timer = window.setTimeout(async () => {
       const nextMap: Record<string, { url: string; size: number }> = {};
       try {
-        for (const photo of photos) {
+        for (const photo of snapshotPhotos) {
           if (cancelled) break;
           const result = await compressImageToJpegBlob(
             photo,
@@ -205,7 +235,7 @@ export default function App() {
     compressionConfig.enabled,
     compressionConfig.dpi,
     compressionConfig.quality,
-    photos,
+    compressionInputsKey,
   ]);
 
   // Calcular escala automática para el modo "Ajustar al ancho"
@@ -247,7 +277,7 @@ export default function App() {
     if (filesArray.length === 0) return;
 
     const uploadGeneration = sessionGenerationRef.current;
-    setIsUploading(true);
+    beginLoad();
     try {
       const processedItems: PhotoPageItem[] = [];
       for (const file of filesArray) {
@@ -279,7 +309,7 @@ export default function App() {
           : 'Error al procesar las fotografías seleccionadas.';
       showStatusMessage(msg, 4500);
     } finally {
-      setIsUploading(false);
+      endLoad();
     }
   };
 
@@ -431,7 +461,7 @@ export default function App() {
 
   const handleLoadProjectJson = async (file: File) => {
     const loadGeneration = ++sessionGenerationRef.current;
-    setIsUploading(true);
+    beginLoad();
     showStatusMessage(null);
     try {
       const restored = await importProjectFromJsonFile(file);
@@ -452,16 +482,20 @@ export default function App() {
         err instanceof Error ? err.message : 'Error al cargar el archivo JSON.';
       showStatusMessage(msg, 5000);
     } finally {
-      setIsUploading(false);
+      endLoad();
     }
   };
 
   const handleAnonymizeGps = () => {
     setPhotos((prev) =>
-      prev.map((p) => ({
-        ...p,
-        exifText: stripGpsFromExifText(p.exifText),
-      }))
+      prev.map((p) => {
+        const cleaned = stripGpsFromExifText(p.exifText);
+        return {
+          ...p,
+          exifText: cleaned,
+          hasExifData: cleaned !== NO_EXIF_DEFAULT_MESSAGE,
+        };
+      })
     );
     showStatusMessage('Coordenadas GPS eliminadas de los metadatos EXIF.');
   };
